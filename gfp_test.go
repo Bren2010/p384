@@ -5,6 +5,8 @@ import (
 
 	"crypto/elliptic"
 	"crypto/rand"
+	"fmt"
+	"math/big"
 )
 
 func TestNegZero(t *testing.T) {
@@ -66,6 +68,27 @@ func TestSub(t *testing.T) {
 		gfpSub(X, X, Y)
 
 		if x.Cmp(X.Int()) != 0 {
+			t.Fatal("not equal")
+		}
+	}
+}
+
+func TestMul(t *testing.T) {
+	P := elliptic.P384().Params().P
+
+	for i := 0; i < 1000000; i++ {
+		x, _ := rand.Int(rand.Reader, P)
+		y, _ := rand.Int(rand.Reader, P)
+		X, Y := &gfP{}, &gfP{}
+		copy(X[:], x.Bits())
+		copy(Y[:], y.Bits())
+
+		z := new(big.Int).Mul(x, y)
+
+		Z := &[12]big.Word{}
+		gfpMul(Z, X, Y)
+
+		if fmt.Sprint(z.Bits()) != fmt.Sprint(Z[:]) {
 			t.Fatal("not equal")
 		}
 	}

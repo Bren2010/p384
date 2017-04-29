@@ -86,11 +86,43 @@ TEXT ·gfpMul(SB),0,$96-24
 
 	// T = a * b
 	mul(0(DI), 0(SI))
-	storeBlock( R8, R9,R10,R11,  0(SP))
-	storeBlock(R12,R13,R14,R15, 32(SP))
-
-	gfpReduce()
 
 	MOVQ c+0(FP), DI
-	storeBlock(R12,R13,R14,R15, 0(DI))
+
+	MOVQ  0(SP),  AX
+	MOVQ AX, 0(DI)
+
+	MOVQ  8(SP),  AX
+	MOVQ AX,   8(DI)
+
+	MOVQ 16(SP),  AX
+	MOVQ AX,  16(DI)
+
+	MOVQ 24(SP),  AX
+	MOVQ AX,  24(DI)
+
+	MOVQ 32(SP),   AX
+	MOVQ AX, 32(DI)
+
+	MOVQ 40(SP),   AX
+	MOVQ AX, 40(DI)
+
+	MOVQ 48(SP),   AX
+	MOVQ AX, 48(DI)
+
+	MOVQ 56(SP),   AX
+	MOVQ AX, 56(DI)
+
+	MOVQ 64(SP),   AX
+	MOVQ AX, 64(DI)
+
+	MOVQ 72(SP),   AX
+	MOVQ AX, 72(DI)
+
+	MOVQ 80(SP),   AX
+	MOVQ AX, 80(DI)
+
+	MOVQ 88(SP),   AX
+	MOVQ AX, 88(DI)
+
 	RET
