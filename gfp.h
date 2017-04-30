@@ -41,10 +41,7 @@
 	CMOVQCC b5, a5 \
 	CMOVQCC b6, a6
 
-#define mul(ra, rb) \
-	mulArb(0+ra,8+ra,16+ra,24+ra,32+ra,40+ra, rb)
-
-#define mulArb(a1,a2,a3,a4,a5,a6, rb) \
+#define mul(a1,a2,a3,a4,a5,a6, rb, stack) \
 	MOVQ a1, DX \
 	MULXQ 0+rb, R8, R9 \
 	MULXQ 8+rb, AX, R10 \
@@ -59,7 +56,7 @@
 	ADCQ AX, R13 \
 	ADCQ $0, R14 \
 	\
-	MOVQ R8, 0(SP) \
+	MOVQ R8, 0+stack \
 	MOVQ $0, R15 \
 	MOVQ $0, R8 \
 	\
@@ -85,7 +82,7 @@
 	ADCQ BX, R15 \
 	ADCQ $0, R8 \
 	\
-	MOVQ R9, 8(SP) \
+	MOVQ R9, 8+stack \
 	MOVQ $0, R9 \
 	\
 	MOVQ a3, DX \
@@ -110,7 +107,7 @@
 	ADCQ BX, R8 \
 	ADCQ $0, R9 \
 	\
-	MOVQ R10, 16(SP) \
+	MOVQ R10, 16+stack \
 	MOVQ $0, R10 \
 	\
 	MOVQ a4, DX \
@@ -135,7 +132,7 @@
 	ADCQ BX, R9 \
 	ADCQ $0, R10 \
 	\
-	MOVQ R11, 24(SP) \
+	MOVQ R11, 24+stack \
 	MOVQ $0, R11 \
 	\
 	MOVQ a5, DX \
@@ -160,7 +157,7 @@
 	ADCQ BX, R10 \
 	ADCQ $0, R11 \
 	\
-	MOVQ R12, 32(SP) \
+	MOVQ R12, 32+stack \
 	\
 	MOVQ a6, DX \
 	MULXQ 0+rb, AX, BX \
@@ -183,61 +180,104 @@
 	ADCQ AX, R10 \
 	ADCQ BX, R11 \
 	\
-	MOVQ R13, 40(SP) \
-	MOVQ R14, 48(SP) \
-	MOVQ R15, 56(SP) \
-	MOVQ R8,  64(SP) \
-	MOVQ R9,  72(SP) \
-	MOVQ R10, 80(SP) \
-	MOVQ R11, 88(SP)
+	MOVQ R13, 40+stack
 
-#define gfpReduce() \
-	\ // m = (T * N') mod R, store m in R8:R9:R10:R11
-	MOVQ ·np+0(SB), DX \
-	MULXQ 0(SP), R8, R9 \
-	MULXQ 8(SP), AX, R10 \
+#define gfpReduce(stack) \
+	\ // m = (T * P') mod R, store m in R8:R9:R10:R11:R12:R13
+	MOVQ ·pp+0(SB), DX \
+	MULXQ 0+stack, R8, R9 \
+	MULXQ 8+stack, AX, R10 \
 	ADDQ AX, R9 \
-	MULXQ 16(SP), AX, R11 \
+	MULXQ 16+stack, AX, R11 \
 	ADCQ AX, R10 \
-	MULXQ 24(SP), AX, BX \
+	MULXQ 24+stack, AX, R12 \
 	ADCQ AX, R11 \
+	MULXQ 32+stack, AX, R13 \
+	ADCQ AX, R12 \
+	MULXQ 40+stack, AX, BX \
+	ADCQ AX, R13 \
 	\
-	MOVQ ·np+8(SB), DX \
-	MULXQ 0(SP), AX, BX \
+	MOVQ ·pp+8(SB), DX \
+	MULXQ 0+stack, AX, BX \
 	ADDQ AX, R9 \
 	ADCQ BX, R10 \
-	MULXQ 16(SP), AX, BX \
+	MULXQ 16+stack, AX, BX \
 	ADCQ AX, R11 \
-	MULXQ 8(SP), AX, BX \
+	ADCQ BX, R12 \
+	MULXQ 32+stack, AX, BX \
+	ADCQ AX, R13 \
+	MULXQ 8+stack, AX, BX \
 	ADDQ AX, R10 \
 	ADCQ BX, R11 \
+	MULXQ 24+stack, AX, BX \
+	ADCQ AX, R12 \
+	ADCQ BX, R13 \
 	\
-	MOVQ ·np+16(SB), DX \
-	MULXQ 0(SP), AX, BX \
+	MOVQ ·pp+16(SB), DX \
+	MULXQ 0+stack, AX, BX \
 	ADDQ AX, R10 \
 	ADCQ BX, R11 \
-	MULXQ 8(SP), AX, BX \
+	MULXQ 16+stack, AX, BX \
+	ADCQ AX, R12 \
+	ADCQ BX, R13 \
+	MULXQ 8+stack, AX, BX \
 	ADDQ AX, R11 \
+	ADCQ BX, R12 \
+	MULXQ 24+stack, AX, BX \
+	ADCQ AX, R13 \
 	\
-	MOVQ ·np+24(SB), DX \
-	MULXQ 0(SP), AX, BX \
+	MOVQ ·pp+24(SB), DX \
+	MULXQ 0+stack, AX, BX \
 	ADDQ AX, R11 \
+	ADCQ BX, R12 \
+	MULXQ 16+stack, AX, BX \
+	ADCQ AX, R13 \
+	MULXQ 8+stack, AX, BX \
+	ADDQ AX, R12 \
+	ADCQ BX, R13 \
 	\
-	storeBlock(R8,R9,R10,R11, 64(SP)) \
+	MOVQ ·pp+32(SB), DX \
+	MULXQ 0+stack, AX, BX \
+	ADDQ AX, R12 \
+	ADCQ BX, R13 \
+	MULXQ 8+stack, AX, BX \
+	ADDQ AX, R13 \
 	\
-	\ // m * N
-	mulArb(·p2+0(SB),·p2+8(SB),·p2+16(SB),·p2+24(SB), 64(SP)) \
+	MOVQ ·pp+40(SB), DX \
+	MULXQ 0+stack, AX, BX \
+	ADDQ AX, R13 \
 	\
-	\ // Add the 512-bit intermediate to m*N
+	storeBlock(R8,R9,R10,R11,R12,R13, 96+stack) \
+	\
+	\ // m * P
+	mul(·p+0(SB),·p+8(SB),·p+16(SB),·p+24(SB),·p+32(SB),·p+40(SB), 96+stack, 144+stack) \
+	\
+	\ // Add the 768-bit intermediate to m*N
 	MOVQ $0, AX \
-	ADDQ 0(SP), R8 \
-	ADCQ 8(SP), R9 \
-	ADCQ 16(SP), R10 \
-	ADCQ 24(SP), R11 \
-	ADCQ 32(SP), R12 \
+	MOVQ 0+144+stack, R13 \
+	ADDQ 0(SP), R13 \
+	\
+	MOVQ 8+144+stack, R13 \
+	ADCQ 8(SP), R13 \
+	\
+	MOVQ 16+144+stack, R13 \
+	ADCQ 16(SP), R13 \
+	\
+	MOVQ 24+144+stack, R13 \
+	ADCQ 24(SP), R13 \
+	\
+	MOVQ 32+144+stack, R13 \
+	ADCQ 32(SP), R13 \
+	\
+	MOVQ 40+144+stack, R13 \
 	ADCQ 40(SP), R13 \
+	\
 	ADCQ 48(SP), R14 \
 	ADCQ 56(SP), R15 \
+	ADCQ 64(SP), R8 \
+	ADCQ 72(SP), R9 \
+	ADCQ 80(SP), R10 \
+	ADCQ 88(SP), R11 \
 	ADCQ $0, AX \
 	\
-	gfpCarry(R12,R13,R14,R15,AX, R8,R9,R10,R11,BX)
+	gfpCarry(R14,R15,R8,R9,R10,R11,AX, R12,R13,BX,CX,DX,DI,SI)

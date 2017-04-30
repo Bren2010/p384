@@ -5,7 +5,6 @@ import (
 
 	"crypto/elliptic"
 	"crypto/rand"
-	"fmt"
 	"math/big"
 )
 
@@ -75,21 +74,54 @@ func TestSub(t *testing.T) {
 
 func TestMul(t *testing.T) {
 	P := elliptic.P384().Params().P
+	R := big.NewInt(1)
+	R.Lsh(R, 384).Mod(R, P).ModInverse(R, P)
 
-	for i := 0; i < 1000000; i++ {
+	for i := 0; i < 100000; i++ {
 		x, _ := rand.Int(rand.Reader, P)
 		y, _ := rand.Int(rand.Reader, P)
 		X, Y := &gfP{}, &gfP{}
 		copy(X[:], x.Bits())
 		copy(Y[:], y.Bits())
 
-		z := new(big.Int).Mul(x, y)
+		x.Mul(x, y).Mul(x, R).Mod(x, P)
+		gfpMul(X, X, Y)
 
-		Z := &[12]big.Word{}
-		gfpMul(Z, X, Y)
-
-		if fmt.Sprint(z.Bits()) != fmt.Sprint(Z[:]) {
+		if x.Cmp(X.Int()) != 0 {
 			t.Fatal("not equal")
 		}
+	}
+}
+
+func BenchmarkMul(b *testing.B) {
+	P := elliptic.P384().Params().P
+	x, _ := rand.Int(rand.Reader, P)
+	X := &gfP{}
+	copy(X[:], x.Bits())
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		gfpMul(X, X, X)
+	}
+}
+
+func BenchmarkBigMul(b *testing.B) {
+	P := elliptic.P384().Params().P
+	x, _ := rand.Int(rand.Reader, P)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		x.Mul(x, x).Mod(x, P)
+	}
+}
+
+func BenchmarkScalarBase(b *testing.B) {
+	P := elliptic.P384().Params().P
+	x, _ := rand.Int(rand.Reader, P)
+	X := x.Bytes()
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		elliptic.P384().ScalarBaseMult(X)
 	}
 }

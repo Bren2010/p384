@@ -66,4 +66,4 @@ func gfpAdd(c, a, b *gfP)
 func gfpSub(c, a, b *gfP)
 
 //go:noescape
-func gfpMul(c *[12]big.Word, a, b *gfP)
+func gfpMul(c, a, b *gfP)

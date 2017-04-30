@@ -80,49 +80,17 @@ TEXT ·gfpSub(SB),0,$0-24
 	storeBlock(R8,R9,R10,R11,R12,R13, 0(DI))
 	RET
 
-TEXT ·gfpMul(SB),0,$96-24
+TEXT ·gfpMul(SB),0,$192-24
 	MOVQ a+8(FP), DI
 	MOVQ b+16(FP), SI
 
 	// T = a * b
-	mul(0(DI), 0(SI))
+	mul(0(DI),8(DI),16(DI),24(DI),32(DI),40(DI), 0(SI), 0(SP))
+	storeBlock(R14,R15,R8,R9,R10,R11, 48(SP))
+
+	// Reduce T.
+	gfpReduce(0(SP))
 
 	MOVQ c+0(FP), DI
-
-	MOVQ  0(SP),  AX
-	MOVQ AX, 0(DI)
-
-	MOVQ  8(SP),  AX
-	MOVQ AX,   8(DI)
-
-	MOVQ 16(SP),  AX
-	MOVQ AX,  16(DI)
-
-	MOVQ 24(SP),  AX
-	MOVQ AX,  24(DI)
-
-	MOVQ 32(SP),   AX
-	MOVQ AX, 32(DI)
-
-	MOVQ 40(SP),   AX
-	MOVQ AX, 40(DI)
-
-	MOVQ 48(SP),   AX
-	MOVQ AX, 48(DI)
-
-	MOVQ 56(SP),   AX
-	MOVQ AX, 56(DI)
-
-	MOVQ 64(SP),   AX
-	MOVQ AX, 64(DI)
-
-	MOVQ 72(SP),   AX
-	MOVQ AX, 72(DI)
-
-	MOVQ 80(SP),   AX
-	MOVQ AX, 80(DI)
-
-	MOVQ 88(SP),   AX
-	MOVQ AX, 88(DI)
-
+	storeBlock(R14,R15,R8,R9,R10,R11, 0(DI))
 	RET
