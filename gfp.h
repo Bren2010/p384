@@ -197,21 +197,11 @@
 	MULXQ 40+stack, AX, BX \
 	ADCQ AX, R13 \
 	\
-	MOVQ ·pp+8(SB), DX \
-	MULXQ 0+stack, AX, BX \
-	ADDQ AX, R9 \
-	ADCQ BX, R10 \
-	MULXQ 16+stack, AX, BX \
-	ADCQ AX, R11 \
-	ADCQ BX, R12 \
-	MULXQ 32+stack, AX, BX \
-	ADCQ AX, R13 \
-	MULXQ 8+stack, AX, BX \
-	ADDQ AX, R10 \
-	ADCQ BX, R11 \
-	MULXQ 24+stack, AX, BX \
-	ADCQ AX, R12 \
-	ADCQ BX, R13 \
+	ADDQ 0+stack, R9 \
+	ADCQ 8+stack, R10 \
+	ADCQ 16+stack, R11 \
+	ADCQ 24+stack, R12 \
+	ADCQ 32+stack, R13 \
 	\
 	MOVQ ·pp+16(SB), DX \
 	MULXQ 0+stack, AX, BX \
@@ -254,30 +244,20 @@
 	\
 	\ // Add the 768-bit intermediate to m*N
 	MOVQ $0, AX \
-	MOVQ 0+144+stack, R13 \
-	ADDQ 0(SP), R13 \
+	loadBlock(144+stack, R12,R13,BX,CX,DX,DI) \
 	\
-	MOVQ 8+144+stack, R13 \
-	ADCQ 8(SP), R13 \
-	\
-	MOVQ 16+144+stack, R13 \
-	ADCQ 16(SP), R13 \
-	\
-	MOVQ 24+144+stack, R13 \
-	ADCQ 24(SP), R13 \
-	\
-	MOVQ 32+144+stack, R13 \
-	ADCQ 32(SP), R13 \
-	\
-	MOVQ 40+144+stack, R13 \
-	ADCQ 40(SP), R13 \
-	\
-	ADCQ 48(SP), R14 \
-	ADCQ 56(SP), R15 \
-	ADCQ 64(SP), R8 \
-	ADCQ 72(SP), R9 \
-	ADCQ 80(SP), R10 \
-	ADCQ 88(SP), R11 \
+	ADDQ 0+stack, R12 \
+	ADCQ 8+stack, R13 \
+	ADCQ 16+stack, BX \
+	ADCQ 24+stack, CX \
+	ADCQ 32+stack, DX \
+	ADCQ 40+stack, DI \
+	ADCQ 48+stack, R14 \
+	ADCQ 56+stack, R15 \
+	ADCQ 64+stack, R8 \
+	ADCQ 72+stack, R9 \
+	ADCQ 80+stack, R10 \
+	ADCQ 88+stack, R11 \
 	ADCQ $0, AX \
 	\
 	gfpCarry(R14,R15,R8,R9,R10,R11,AX, R12,R13,BX,CX,DX,DI,SI)
