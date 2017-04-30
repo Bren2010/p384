@@ -15,7 +15,7 @@ func newGFp(x int64) (out *gfP) {
 		gfpNeg(out, out)
 	}
 
-	// montEncode(out, out)
+	montEncode(out, out)
 	return out
 }
 
@@ -36,25 +36,28 @@ func (e *gfP) String() string {
 	return fmt.Sprintf("%16.16x%16.16x%16.16x%16.16x%16.16x%16.16x", e[5], e[4], e[3], e[2], e[1], e[0])
 }
 
-// func (e *gfP) Invert(f *gfP) {
-// 	bits := [4]uint64{0x185cac6c5e089665, 0xee5b88d120b5b59e, 0xaa6fecb86184dc21, 0x8fb501e34aa387f9}
-//
-// 	sum, power := &gfP{}, &gfP{}
-// 	sum.Set(rN1)
-// 	power.Set(f)
-//
-// 	for word := 0; word < 4; word++ {
-// 		for bit := uint(0); bit < 64; bit++ {
-// 			if (bits[word]>>bit)&1 == 1 {
-// 				gfpMul(sum, sum, power)
-// 			}
-// 			gfpMul(power, power, power)
-// 		}
-// 	}
-//
-// 	gfpMul(sum, sum, r3)
-// 	e.Set(sum)
-// }
+func (e *gfP) Invert(f *gfP) {
+	bits := [6]uint64{0xfffffffd, 0xffffffff00000000, 0xfffffffffffffffe, 0xffffffffffffffff, 0xffffffffffffffff, 0xffffffffffffffff}
+
+	sum, power := &gfP{}, &gfP{}
+	sum.Set(&rN1)
+	power.Set(f)
+
+	for word := 0; word < 6; word++ {
+		for bit := uint(0); bit < 64; bit++ {
+			if (bits[word]>>bit)&1 == 1 {
+				gfpMul(sum, sum, power)
+			}
+			gfpMul(power, power, power)
+		}
+	}
+
+	gfpMul(sum, sum, &r3)
+	e.Set(sum)
+}
+
+func montEncode(c, a *gfP) { gfpMul(c, a, &r2) }
+func montDecode(c, a *gfP) { gfpMul(c, a, &gfP{1}) }
 
 // go:noescape
 func gfpNeg(c, a *gfP)

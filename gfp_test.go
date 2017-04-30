@@ -72,10 +72,24 @@ func TestSub(t *testing.T) {
 	}
 }
 
+func TestMulZero(t *testing.T) {
+	P := elliptic.P384().Params().P
+	x, _ := rand.Int(rand.Reader, P)
+	X := &gfP{}
+	copy(X[:], x.Bits())
+
+	zero := &gfP{}
+	gfpMul(X, X, zero)
+
+	if *X != *zero {
+		t.Fatal("not zero")
+	}
+}
+
 func TestMul(t *testing.T) {
 	P := elliptic.P384().Params().P
-	R := big.NewInt(1)
-	R.Lsh(R, 384).Mod(R, P).ModInverse(R, P)
+	Rinv := big.NewInt(1)
+	Rinv.Lsh(Rinv, 384).Mod(Rinv, P).ModInverse(Rinv, P)
 
 	for i := 0; i < 100000; i++ {
 		x, _ := rand.Int(rand.Reader, P)
@@ -84,7 +98,7 @@ func TestMul(t *testing.T) {
 		copy(X[:], x.Bits())
 		copy(Y[:], y.Bits())
 
-		x.Mul(x, y).Mul(x, R).Mod(x, P)
+		x.Mul(x, y).Mul(x, Rinv).Mod(x, P)
 		gfpMul(X, X, Y)
 
 		if x.Cmp(X.Int()) != 0 {
@@ -93,35 +107,21 @@ func TestMul(t *testing.T) {
 	}
 }
 
-func BenchmarkMul(b *testing.B) {
+func TestInvert(t *testing.T) {
 	P := elliptic.P384().Params().P
-	x, _ := rand.Int(rand.Reader, P)
-	X := &gfP{}
-	copy(X[:], x.Bits())
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		gfpMul(X, X, X)
-	}
-}
+	for i := 0; i < 1000; i++ {
+		x, _ := rand.Int(rand.Reader, P)
+		X := &gfP{}
+		copy(X[:], x.Bits())
 
-func BenchmarkBigMul(b *testing.B) {
-	P := elliptic.P384().Params().P
-	x, _ := rand.Int(rand.Reader, P)
+		x.ModInverse(x, P)
+		montEncode(X, X)
+		X.Invert(X)
+		montDecode(X, X)
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		x.Mul(x, x).Mod(x, P)
-	}
-}
-
-func BenchmarkScalarBase(b *testing.B) {
-	P := elliptic.P384().Params().P
-	x, _ := rand.Int(rand.Reader, P)
-	X := x.Bytes()
-
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		elliptic.P384().ScalarBaseMult(X)
+		if x.Cmp(X.Int()) != 0 {
+			t.Fatal("not equal")
+		}
 	}
 }
