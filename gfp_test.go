@@ -91,7 +91,7 @@ func TestMul(t *testing.T) {
 	Rinv := big.NewInt(1)
 	Rinv.Lsh(Rinv, 384).Mod(Rinv, P).ModInverse(Rinv, P)
 
-	for i := 0; i < 100000; i++ {
+	for i := 0; i < 10000; i++ {
 		x, _ := rand.Int(rand.Reader, P)
 		y, _ := rand.Int(rand.Reader, P)
 		X, Y := &gfP{}, &gfP{}
