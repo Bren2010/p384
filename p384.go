@@ -23,7 +23,21 @@ var (
 
 	// b is the curve's B parameter, Montgomery encoded.
 	b = gfP{0x81188719d412dcc, 0xf729add87a4c32ec, 0x77f2209b1920022e, 0xe3374bee94938ae2, 0xb62b21f41f022094, 0xcd08114b604fbff9}
+
+	// baseMultiples has [2^i] * G at position i.
+	baseMultiples [384]affinePoint
 )
+
+func init() {
+	params := elliptic.P384().Params()
+	baseMultiples[0] = *newAffinePoint(params.Gx, params.Gy)
+
+	c := &Curve{}
+	for i := 1; i < len(baseMultiples); i++ {
+		pt := c.double(baseMultiples[i-1].ToJacobian()).ToAffine()
+		baseMultiples[i] = *pt
+	}
+}
 
 type Curve struct{}
 
@@ -145,18 +159,7 @@ func (c *Curve) double(a *jacobianPoint) *jacobianPoint {
 	return &jacobianPoint{*x3, *y3, *z3}
 }
 
-func (c *Curve) Add(x1, y1, x2, y2 *big.Int) (x, y *big.Int) {
-	pt := c.add(newAffinePoint(x1, y1).ToJacobian(), newAffinePoint(x2, y2))
-	return pt.ToAffine().ToInt()
-}
-
-func (c *Curve) Double(x1, y1 *big.Int) (x, y *big.Int) {
-	pt := c.double(newAffinePoint(x1, y1).ToJacobian())
-	return pt.ToAffine().ToInt()
-}
-
-func (c *Curve) ScalarMult(x1, y1 *big.Int, k []byte) (x, y *big.Int) {
-	pt := newAffinePoint(x1, y1)
+func (c *Curve) scalarMult(pt *affinePoint, k []byte) *jacobianPoint {
 	sum := &jacobianPoint{}
 
 	for i := 0; i < len(k); i++ {
@@ -169,13 +172,57 @@ func (c *Curve) ScalarMult(x1, y1 *big.Int, k []byte) (x, y *big.Int) {
 		}
 	}
 
-	return sum.ToAffine().ToInt()
+	return sum
 }
 
-// func (c *Curve) ScalarBaseMult(k []byte) (x, y *big.Int) {
-//
-// }
-//
-// func (c *Curve) CombinedMult(bigX, bigY *big.Int, baseScalar, scalar []byte) (x, y *big.Int) {
-//
-// }
+func (c *Curve) scalarBaseMult(k []byte) *jacobianPoint {
+	sum := &jacobianPoint{}
+	max := 48
+	if len(k) < 48 {
+		max = len(k)
+	}
+
+	for i := 0; i < max; i++ {
+		for j := 7; j >= 0; j-- {
+			if (k[i]>>uint(j))&1 == 1 {
+				sum = c.add(sum, &baseMultiples[8*(max-i-1)+j])
+			}
+		}
+	}
+	for i := 48; i < len(k); i++ {
+		for j := 7; j >= 0; j-- {
+			sum = c.double(sum)
+
+			if (k[i]>>uint(j))&1 == 1 {
+				sum = c.add(sum, &baseMultiples[0])
+			}
+		}
+	}
+
+	return sum
+}
+
+func (c *Curve) Add(x1, y1, x2, y2 *big.Int) (x, y *big.Int) {
+	pt := c.add(newAffinePoint(x1, y1).ToJacobian(), newAffinePoint(x2, y2))
+	return pt.ToAffine().ToInt()
+}
+
+func (c *Curve) Double(x1, y1 *big.Int) (x, y *big.Int) {
+	pt := c.double(newAffinePoint(x1, y1).ToJacobian())
+	return pt.ToAffine().ToInt()
+}
+
+func (c *Curve) ScalarMult(x1, y1 *big.Int, k []byte) (x, y *big.Int) {
+	return c.scalarMult(newAffinePoint(x1, y1), k).ToAffine().ToInt()
+}
+
+func (c *Curve) ScalarBaseMult(k []byte) (x, y *big.Int) {
+	return c.scalarBaseMult(k).ToAffine().ToInt()
+}
+
+func (c *Curve) CombinedMult(bigX, bigY *big.Int, baseScalar, scalar []byte) (x, y *big.Int) {
+	a := c.scalarBaseMult(baseScalar)
+	b := c.scalarMult(newAffinePoint(bigX, bigY), scalar).ToAffine()
+
+	return c.add(a, b).ToAffine().ToInt()
+}
