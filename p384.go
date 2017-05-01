@@ -1,3 +1,4 @@
+// Package p384 is an AMD64-optimized P-384 implementation.
 package p384
 
 import (
