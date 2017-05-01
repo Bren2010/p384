@@ -53,6 +53,98 @@ func (c *Curve) IsOnCurve(X, Y *big.Int) bool {
 	return *y2 == *x3
 }
 
+func (c *Curve) add(a *jacobianPoint, b *affinePoint) *jacobianPoint {
+	if a.IsZero() {
+		return b.ToJacobian()
+	} else if b.IsZero() {
+		return a.Dup()
+	}
+
+	z1z1, u2 := &gfP{}, &gfP{}
+	gfpMul(z1z1, &a.z, &a.z)
+	gfpMul(u2, &b.x, z1z1)
+
+	s2 := &gfP{}
+	gfpMul(s2, &b.y, &a.z)
+	gfpMul(s2, s2, z1z1)
+	if a.x == *u2 {
+		if a.y != *s2 {
+			return &jacobianPoint{}
+		}
+		return c.double(a)
+	}
+
+	h, r := &gfP{}, &gfP{}
+	gfpSub(h, u2, &a.x)
+	gfpSub(r, s2, &a.y)
+
+	h2, h3 := &gfP{}, &gfP{}
+	gfpMul(h2, h, h)
+	gfpMul(h3, h2, h)
+
+	h2x1 := &gfP{}
+	gfpMul(h2x1, h2, &a.x)
+
+	x3, y3, z3 := &gfP{}, &gfP{}, &gfP{}
+	gfpMul(x3, r, r)
+	gfpSub(x3, x3, h3)
+	gfpSub(x3, x3, h2x1)
+	gfpSub(x3, x3, h2x1)
+
+	gfpSub(y3, h2x1, x3)
+	gfpMul(y3, y3, r)
+	h3y1 := &gfP{}
+	gfpMul(h3y1, h3, &a.y)
+	gfpSub(y3, y3, h3y1)
+
+	gfpMul(z3, h, &a.z)
+
+	return &jacobianPoint{*x3, *y3, *z3}
+}
+
+func (c *Curve) double(a *jacobianPoint) *jacobianPoint {
+	delta, gamma, alpha, alpha2 := &gfP{}, &gfP{}, &gfP{}, &gfP{}
+	gfpMul(delta, &a.z, &a.z)
+	gfpMul(gamma, &a.y, &a.y)
+	gfpSub(alpha, &a.x, delta)
+	gfpAdd(alpha2, &a.x, delta)
+	gfpMul(alpha, alpha, alpha2)
+	*alpha2 = *alpha
+	gfpAdd(alpha, alpha, alpha)
+	gfpAdd(alpha, alpha, alpha2)
+
+	beta := &gfP{}
+	gfpMul(beta, &a.x, gamma)
+
+	x3, beta8 := &gfP{}, &gfP{}
+	gfpMul(x3, alpha, alpha)
+	gfpAdd(beta8, beta, beta)
+	gfpAdd(beta8, beta8, beta8)
+	gfpAdd(beta8, beta8, beta8)
+	gfpSub(x3, x3, beta8)
+
+	z3 := &gfP{}
+	gfpAdd(z3, &a.y, &a.z)
+	gfpMul(z3, z3, z3)
+	gfpSub(z3, z3, gamma)
+	gfpSub(z3, z3, delta)
+
+	gfpAdd(beta, beta, beta)
+	gfpAdd(beta, beta, beta)
+	gfpSub(beta, beta, x3)
+
+	y3 := &gfP{}
+	gfpMul(y3, alpha, beta)
+
+	gfpMul(gamma, gamma, gamma)
+	gfpAdd(gamma, gamma, gamma)
+	gfpAdd(gamma, gamma, gamma)
+	gfpAdd(gamma, gamma, gamma)
+	gfpSub(y3, y3, gamma)
+
+	return &jacobianPoint{*x3, *y3, *z3}
+}
+
 // func (c *Curve) Add(x1, y1, x2, y2 *big.Int) (x, y *big.Int) {
 //
 // }
