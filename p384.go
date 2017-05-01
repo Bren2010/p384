@@ -155,10 +155,23 @@ func (c *Curve) Double(x1, y1 *big.Int) (x, y *big.Int) {
 	return pt.ToAffine().ToInt()
 }
 
-// func (c *Curve) ScalarMult(x1, y1 *big.Int, k []byte) (x, y *big.Int) {
-//
-// }
-//
+func (c *Curve) ScalarMult(x1, y1 *big.Int, k []byte) (x, y *big.Int) {
+	pt := newAffinePoint(x1, y1)
+	sum := &jacobianPoint{}
+
+	for i := 0; i < len(k); i++ {
+		for j := 7; j >= 0; j-- {
+			sum = c.double(sum)
+
+			if (k[i]>>uint(j))&1 == 1 {
+				sum = c.add(sum, pt)
+			}
+		}
+	}
+
+	return sum.ToAffine().ToInt()
+}
+
 // func (c *Curve) ScalarBaseMult(k []byte) (x, y *big.Int) {
 //
 // }

@@ -95,3 +95,30 @@ func TestJacobianDouble(t *testing.T) {
 		}
 	}
 }
+
+func TestScalarMult(t *testing.T) {
+	params := elliptic.P384().Params()
+
+	for i := 0; i < 100; i++ {
+		K, _ := rand.Int(rand.Reader, params.N)
+		X, Y := params.ScalarBaseMult(K.Bytes())
+
+		c := &Curve{}
+		candX, candY := c.ScalarMult(params.Gx, params.Gy, K.Bytes())
+
+		if X.Cmp(candX) != 0 || Y.Cmp(candY) != 0 {
+			t.Fatal("points not the same!")
+		}
+	}
+}
+
+func BenchmarkScalarMult(b *testing.B) {
+	params := elliptic.P384().Params()
+	K, _ := rand.Int(rand.Reader, params.N)
+	c := &Curve{}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		c.ScalarMult(params.Gx, params.Gy, K.Bytes())
+	}
+}
