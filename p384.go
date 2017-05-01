@@ -145,14 +145,16 @@ func (c *Curve) double(a *jacobianPoint) *jacobianPoint {
 	return &jacobianPoint{*x3, *y3, *z3}
 }
 
-// func (c *Curve) Add(x1, y1, x2, y2 *big.Int) (x, y *big.Int) {
-//
-// }
-//
-// func (c *Curve) Double(x1, y1 *big.Int) (x, y *big.Int) {
-//
-// }
-//
+func (c *Curve) Add(x1, y1, x2, y2 *big.Int) (x, y *big.Int) {
+	pt := c.add(newAffinePoint(x1, y1).ToJacobian(), newAffinePoint(x2, y2))
+	return pt.ToAffine().ToInt()
+}
+
+func (c *Curve) Double(x1, y1 *big.Int) (x, y *big.Int) {
+	pt := c.double(newAffinePoint(x1, y1).ToJacobian())
+	return pt.ToAffine().ToInt()
+}
+
 // func (c *Curve) ScalarMult(x1, y1 *big.Int, k []byte) (x, y *big.Int) {
 //
 // }
