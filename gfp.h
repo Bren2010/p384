@@ -1,48 +1,48 @@
-#define storeBlock(a1,a2,a3,a4,a5,a6, r) \
-	MOVQ a1,  0+r \
-	MOVQ a2,  8+r \
-	MOVQ a3, 16+r \
-	MOVQ a4, 24+r \
-	MOVQ a5, 32+r \
-	MOVQ a6, 40+r \
+#define storeBlock(a0,a1,a2,a3,a4,a5, r) \
+	MOVQ a0,  0+r \
+	MOVQ a1,  8+r \
+	MOVQ a2, 16+r \
+	MOVQ a3, 24+r \
+	MOVQ a4, 32+r \
+	MOVQ a5, 40+r \
 
-#define loadBlock(r, a1,a2,a3,a4,a5,a6) \
-	MOVQ  0+r, a1 \
-	MOVQ  8+r, a2 \
-	MOVQ 16+r, a3 \
-	MOVQ 24+r, a4 \
-	MOVQ 32+r, a5 \
-	MOVQ 40+r, a6
+#define loadBlock(r, a0,a1,a2,a3,a4,a5) \
+	MOVQ  0+r, a0 \
+	MOVQ  8+r, a1 \
+	MOVQ 16+r, a2 \
+	MOVQ 24+r, a3 \
+	MOVQ 32+r, a4 \
+	MOVQ 40+r, a5
 
-#define gfpCarry(a1,a2,a3,a4,a5,a6,a7, b1,b2,b3,b4,b5,b6,b7) \
+#define gfpCarry(a0,a1,a2,a3,a4,a5,a6, b0,b1,b2,b3,b4,b5,b6) \
 	\ // b = a-p
+	MOVQ a0, b0 \
 	MOVQ a1, b1 \
 	MOVQ a2, b2 \
 	MOVQ a3, b3 \
 	MOVQ a4, b4 \
 	MOVQ a5, b5 \
 	MOVQ a6, b6 \
-	MOVQ a7, b7 \
 	\
-	SUBQ ·p+0(SB), b1 \
-	SBBQ ·p+8(SB), b2 \
-	SBBQ ·p+16(SB), b3 \
-	SBBQ ·p+24(SB), b4 \
-	SBBQ ·p+32(SB), b5 \
-	SBBQ ·p+40(SB), b6 \
-	SBBQ $0, b7 \
+	SUBQ ·p+0(SB), b0 \
+	SBBQ ·p+8(SB), b1 \
+	SBBQ ·p+16(SB), b2 \
+	SBBQ ·p+24(SB), b3 \
+	SBBQ ·p+32(SB), b4 \
+	SBBQ ·p+40(SB), b5 \
+	SBBQ $0, b6 \
 	\
 	\ // if b is negative then return a
 	\ // else return b
+	CMOVQCC b0, a0 \
 	CMOVQCC b1, a1 \
 	CMOVQCC b2, a2 \
 	CMOVQCC b3, a3 \
 	CMOVQCC b4, a4 \
-	CMOVQCC b5, a5 \
-	CMOVQCC b6, a6
+	CMOVQCC b5, a5
 
-#define mul(a1,a2,a3,a4,a5,a6, rb, stack) \
-	MOVQ a1, DX \
+#define mul(a0,a1,a2,a3,a4,a5, rb, stack) \
+	MOVQ a0, DX \
 	MULXQ 0+rb, R8, R9 \
 	MULXQ 8+rb, AX, R10 \
 	ADDQ AX, R9 \
@@ -60,7 +60,7 @@
 	MOVQ $0, R15 \
 	MOVQ $0, R8 \
 	\
-	MOVQ a2, DX \
+	MOVQ a1, DX \
 	MULXQ 0+rb, AX, BX \
 	ADDQ AX, R9 \
 	ADCQ BX, R10 \
@@ -85,7 +85,7 @@
 	MOVQ R9, 8+stack \
 	MOVQ $0, R9 \
 	\
-	MOVQ a3, DX \
+	MOVQ a2, DX \
 	MULXQ 0+rb, AX, BX \
 	ADDQ AX, R10 \
 	ADCQ BX, R11 \
@@ -110,7 +110,7 @@
 	MOVQ R10, 16+stack \
 	MOVQ $0, R10 \
 	\
-	MOVQ a4, DX \
+	MOVQ a3, DX \
 	MULXQ 0+rb, AX, BX \
 	ADDQ AX, R11 \
 	ADCQ BX, R12 \
@@ -135,7 +135,7 @@
 	MOVQ R11, 24+stack \
 	MOVQ $0, R11 \
 	\
-	MOVQ a5, DX \
+	MOVQ a4, DX \
 	MULXQ 0+rb, AX, BX \
 	ADDQ AX, R12 \
 	ADCQ BX, R13 \
@@ -159,7 +159,7 @@
 	\
 	MOVQ R12, 32+stack \
 	\
-	MOVQ a6, DX \
+	MOVQ a5, DX \
 	MULXQ 0+rb, AX, BX \
 	ADDQ AX, R13 \
 	ADCQ BX, R14 \
