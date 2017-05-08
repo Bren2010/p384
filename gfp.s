@@ -1,4 +1,6 @@
 #include "gfp.h"
+#include "mul.h"
+#include "mul_bmi2.h"
 
 TEXT ·gfpNeg(SB),0,$0-16
 	MOVQ ·p+0(SB), R8
@@ -80,17 +82,34 @@ TEXT ·gfpSub(SB),0,$0-24
 	storeBlock(R8,R9,R10,R11,R12,R13, 0(DI))
 	RET
 
-TEXT ·gfpMul(SB),0,$192-24
+TEXT ·gfpMul(SB),0,$240-24
 	MOVQ a+8(FP), DI
 	MOVQ b+16(FP), SI
 
+	// Jump to a slightly different implementation if MULX isn't supported.
+	CMPB runtime·support_bmi2(SB), $0
+	JE   nobmi2Mul
+
+	// T = a * b
+	mulBMI2(0(DI),8(DI),16(DI),24(DI),32(DI),40(DI), 0(SI), 0(SP))
+	storeBlock(R14,R15,R8,R9,R10,R11, 48(SP))
+
+	// Reduce T.
+	gfpReduceBMI2(0(SP))
+
+	MOVQ c+0(FP), DI
+	storeBlock(R14,R15,R8,R9,R10,R11, 0(DI))
+	JMP end
+
+nobmi2Mul:
 	// T = a * b
 	mul(0(DI),8(DI),16(DI),24(DI),32(DI),40(DI), 0(SI), 0(SP))
-	storeBlock(R14,R15,R8,R9,R10,R11, 48(SP))
 
 	// Reduce T.
 	gfpReduce(0(SP))
 
 	MOVQ c+0(FP), DI
-	storeBlock(R14,R15,R8,R9,R10,R11, 0(DI))
+	storeBlock(R14,R15,AX,BX,CX,DX, 0(DI))
+
+end:
 	RET
