@@ -160,7 +160,18 @@ func (c *Curve) double(a *jacobianPoint) *jacobianPoint {
 	return &jacobianPoint{*x3, *y3, *z3}
 }
 
-func (c *Curve) scalarMult(pt *affinePoint, k []byte) *jacobianPoint {
+func (c *Curve) Add(x1, y1, x2, y2 *big.Int) (x, y *big.Int) {
+	pt := c.add(newAffinePoint(x1, y1).ToJacobian(), newAffinePoint(x2, y2))
+	return pt.ToAffine().ToInt()
+}
+
+func (c *Curve) Double(x1, y1 *big.Int) (x, y *big.Int) {
+	pt := c.double(newAffinePoint(x1, y1).ToJacobian())
+	return pt.ToAffine().ToInt()
+}
+
+func (c *Curve) ScalarMult(x1, y1 *big.Int, k []byte) (x, y *big.Int) {
+	pt := newAffinePoint(x1, y1)
 	sum := &jacobianPoint{}
 
 	for i := 0; i < len(k); i++ {
@@ -173,10 +184,10 @@ func (c *Curve) scalarMult(pt *affinePoint, k []byte) *jacobianPoint {
 		}
 	}
 
-	return sum
+	return sum.ToAffine().ToInt()
 }
 
-func (c *Curve) scalarBaseMult(k []byte) *jacobianPoint {
+func (c *Curve) ScalarBaseMult(k []byte) (x, y *big.Int) {
 	sum := &jacobianPoint{}
 	max := 48
 	if len(k) < 48 {
@@ -200,30 +211,36 @@ func (c *Curve) scalarBaseMult(k []byte) *jacobianPoint {
 		}
 	}
 
-	return sum
-}
-
-func (c *Curve) Add(x1, y1, x2, y2 *big.Int) (x, y *big.Int) {
-	pt := c.add(newAffinePoint(x1, y1).ToJacobian(), newAffinePoint(x2, y2))
-	return pt.ToAffine().ToInt()
-}
-
-func (c *Curve) Double(x1, y1 *big.Int) (x, y *big.Int) {
-	pt := c.double(newAffinePoint(x1, y1).ToJacobian())
-	return pt.ToAffine().ToInt()
-}
-
-func (c *Curve) ScalarMult(x1, y1 *big.Int, k []byte) (x, y *big.Int) {
-	return c.scalarMult(newAffinePoint(x1, y1), k).ToAffine().ToInt()
-}
-
-func (c *Curve) ScalarBaseMult(k []byte) (x, y *big.Int) {
-	return c.scalarBaseMult(k).ToAffine().ToInt()
+	return sum.ToAffine().ToInt()
 }
 
 func (c *Curve) CombinedMult(bigX, bigY *big.Int, baseScalar, scalar []byte) (x, y *big.Int) {
-	a := c.scalarBaseMult(baseScalar)
-	b := c.scalarMult(newAffinePoint(bigX, bigY), scalar).ToAffine()
+	ptA := baseMultiples[0]
+	ptB := newAffinePoint(bigX, bigY)
+	ptC := c.add(ptA.ToJacobian(), ptB).ToAffine()
+	sum := &jacobianPoint{}
 
-	return c.add(a, b).ToAffine().ToInt()
+	for i := 0; i < len(baseScalar) || i < len(scalar); i++ {
+		for j := 7; j >= 0; j-- {
+			sum = c.double(sum)
+
+			var a, b byte
+			if i < len(baseScalar) {
+				a = (baseScalar[i] >> uint(j)) & 1
+			}
+			if i < len(scalar) {
+				b = (scalar[i] >> uint(j)) & 1
+			}
+
+			if a == 1 && b == 0 {
+				sum = c.add(sum, &ptA)
+			} else if a == 0 && b == 1 {
+				sum = c.add(sum, ptB)
+			} else if a == 1 && b == 1 {
+				sum = c.add(sum, ptC)
+			}
+		}
+	}
+
+	return sum.ToAffine().ToInt()
 }
