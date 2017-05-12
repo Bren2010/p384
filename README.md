@@ -7,9 +7,10 @@ more than two-thirds of its time in P-384 ScalarMult, so I wrote this.
 
 ```
 // Standard library implementation.
-BenchmarkP384-4             	     300	   5191405 ns/op
+BenchmarkP384-4             	     300	   4374713 ns/op
 
 // Our implementation.
-BenchmarkScalarMult-4       	    3000	    427697 ns/op
-BenchmarkScalarBaseMult-4   	   10000	    192089 ns/op
+BenchmarkScalarMult-4       	    3000	    407747 ns/op
+BenchmarkScalarBaseMult-4   	   10000	    177722 ns/op
+BenchmarkCombinedMult-4     	    2000	    592076 ns/op
 ```

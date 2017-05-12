@@ -128,6 +128,27 @@ func TestScalarBaseMult(t *testing.T) {
 	}
 }
 
+func TestCombinedMult(t *testing.T) {
+	params := elliptic.P384().Params()
+	K, _ := rand.Int(rand.Reader, params.N)
+	X, Y := params.ScalarBaseMult(K.Bytes())
+
+	for i := 0; i < 100; i++ {
+		K1, _ := rand.Int(rand.Reader, params.N)
+		K2, _ := rand.Int(rand.Reader, params.N)
+		X1, Y1 := params.ScalarBaseMult(K1.Bytes())
+		X2, Y2 := params.ScalarMult(X, Y, K2.Bytes())
+		X3, Y3 := params.Add(X1, Y1, X2, Y2)
+
+		c := &Curve{}
+		candX, candY := c.CombinedMult(X, Y, K1.Bytes(), K2.Bytes())
+
+		if X3.Cmp(candX) != 0 || Y3.Cmp(candY) != 0 {
+			t.Fatal("points not the same!")
+		}
+	}
+}
+
 func BenchmarkP384(b *testing.B) {
 	c := elliptic.P384()
 	params := c.Params()
@@ -151,12 +172,24 @@ func BenchmarkScalarMult(b *testing.B) {
 }
 
 func BenchmarkScalarBaseMult(b *testing.B) {
-	K := make([]byte, 48)
-	rand.Read(K)
+	params := elliptic.P384().Params()
+	K, _ := rand.Int(rand.Reader, params.N)
 	c := &Curve{}
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		c.ScalarBaseMult(K)
+		c.ScalarBaseMult(K.Bytes())
+	}
+}
+
+func BenchmarkCombinedMult(b *testing.B) {
+	params := elliptic.P384().Params()
+	K1, _ := rand.Int(rand.Reader, params.N)
+	K2, _ := rand.Int(rand.Reader, params.N)
+	c := &Curve{}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		c.CombinedMult(params.Gx, params.Gy, K1.Bytes(), K2.Bytes())
 	}
 }
