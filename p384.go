@@ -220,16 +220,23 @@ func (c *Curve) CombinedMult(bigX, bigY *big.Int, baseScalar, scalar []byte) (x,
 	ptC := c.add(ptA.ToJacobian(), ptB).ToAffine()
 	sum := &jacobianPoint{}
 
-	for i := 0; i < len(baseScalar) || i < len(scalar); i++ {
+	kb, ks := 0, 0
+	if len(baseScalar) < len(scalar) {
+		kb = len(scalar) - len(baseScalar)
+	} else if len(scalar) < len(baseScalar) {
+		ks = len(baseScalar) - len(scalar)
+	}
+
+	for i := 0; i < len(baseScalar)+kb; i++ {
 		for j := 7; j >= 0; j-- {
 			sum = c.double(sum)
 
 			var a, b byte
-			if i < len(baseScalar) {
-				a = (baseScalar[i] >> uint(j)) & 1
+			if k := i - kb; k >= 0 && k < len(baseScalar) {
+				a = (baseScalar[k] >> uint(j)) & 1
 			}
-			if i < len(scalar) {
-				b = (scalar[i] >> uint(j)) & 1
+			if k := i - ks; k >= 0 && k < len(scalar) {
+				b = (scalar[k] >> uint(j)) & 1
 			}
 
 			if a == 1 && b == 0 {
