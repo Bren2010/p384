@@ -3,7 +3,11 @@ package p384
 import (
 	"fmt"
 	"math/big"
+
+	"golang.org/x/sys/cpu"
 )
+
+var hasBMI2 = cpu.X86.HasBMI2
 
 type gfP [6]big.Word
 

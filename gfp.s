@@ -87,7 +87,7 @@ TEXT ·gfpMul(SB),0,$240-24
 	MOVQ b+16(FP), SI
 
 	// Jump to a slightly different implementation if MULX isn't supported.
-	CMPB runtime·support_bmi2(SB), $0
+	CMPB ·hasBMI2(SB), $0
 	JE   nobmi2Mul
 
 	// T = a * b
